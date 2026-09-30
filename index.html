@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f8f8f8">
+<title>АЙСОР — архитектурное бюро</title>
+<style>
+  :root {
+    --paper: #f8f8f8;
+    --ink: #454545;
+    --muted: #aeb1b3;
+    --line: #d9d9d9;
+    --page-x: clamp(24px, 10.05vw, 184px);
+    --top-y: clamp(28px, 3.1vw, 58px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  button, a { color: inherit; font: inherit; }
+  button { cursor: pointer; }
+  .screen { min-height: 100svh; display: none; position: relative; }
+  .screen.active { display: block; }
+  /* Intro */
+  #intro {
+    min-height: 100svh;
+    border: 1px solid #d9d9d9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .intro-title {
+    margin: 0;
+    font-size: clamp(19px, 1.65vw, 31px);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -.055em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .language {
+    position: absolute;
+    top: 8.5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--muted);
+    z-index: 2;
+  }
+  .language button {
+    padding: 0 0 7px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .language button.selected { border-bottom: 1px solid #bfc1c2; }
+  .intro-contact {
+    position: absolute;
+    bottom: 9.2%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .intro-contact a { text-decoration: none; }
+  .intro-contact .presentation { margin-top: 18px; }
+  /* Inner pages */
+  .page {
+    min-height: 100svh;
+    padding: var(--top-y) var(--page-x) 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    height: 22px;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    position: relative;
+    z-index: 5;
+  }
+  .menu-toggle {
+    justify-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 15px;
+    height: 15px;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+  }
+  .menu-toggle span { width: 11px; height: 1.5px; background: var(--ink); display: block; }
+  .page-title {
+    justify-self: center;
+    margin: 0;
+    font-size: clamp(12px, .9vw, 16px);
+    line-height: 1;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .filter-toggle {
+    justify-self: end;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    width: 15px;
+    height: 16px;
+    position: relative;
+  }
+  .filter-toggle:before {
+    content: "";
+    position: absolute;
+    left: 2px; top: 3px;
+    width: 10px; height: 7px;
+    border: 1.5px solid var(--ink);
+    border-top: 0;
+    clip-path: polygon(0 0,100% 0,58% 55%,58% 100%,42% 100%,42% 55%);
+  }
+  .filter-toggle:after {
+    content: "";
+    position: absolute;
+    width: 1.5px; height: 5px;
+    background: var(--ink);
+    left: 7px; top: 8px;
+  }
+  .projects-grid {
+    margin-top: clamp(48px, 3.75vw, 70px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: clamp(36px, 10.4vw, 190px);
+    row-gap: clamp(54px, 5.55vw, 102px);
+  }
+  .project-card {
+    display: block;
+    min-width: 0;
+    text-decoration: none;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+  }
+  .project-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #dedede;
+    border: 1px solid #d4d4d4;
+    transition: background .25s ease;
+  }
+  .project-card:hover .project-image { background: #d2d2d2; }
+  .project-name {
+    display: block;
+    margin-top: 12px;
+    font-size: 11px;
+    line-height: 1.35;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  .project-card:focus-visible .project-name,
+  .project-card:hover .project-name { opacity: .75; }
+  .site-footer {
+    margin-top: auto;
+    padding: clamp(58px, 5.4vw, 100px) 0 clamp(28px, 2.8vw, 52px);
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: end;
+    gap: 24px;
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 600;
+  }
+  .footer-nav { display: flex; flex-direction: column; align-items: flex-start; }
+  .footer-nav a, .footer-lang a { text-decoration: none; }
+  .footer-nav a:hover, .footer-contact a:hover { opacity: .55; }
+  .footer-lang { display: flex; gap: 14px; margin-top: 35px; font-size: 12px; }
+  .footer-lang .inactive { color: var(--muted); }
+  .footer-contact { color: var(--muted); }
+  .footer-contact strong { color: var(--ink); font-weight: 600; }
+  .footer-contact a { color: var(--ink); text-decoration: none; }
+  .footer-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; min-height: 90px; }
+  .to-top {
+    border: 2px solid var(--ink);
+    background: transparent;
+    padding: 7px 16px 6px;
+    min-width: 86px;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .credit { color: var(--muted); white-space: nowrap; }
+  .credit strong { color: var(--ink); }
+  /* Menu and filter */
+  .menu-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    background: var(--paper);
+    display: none;
+    padding: clamp(90px, 12vh, 150px) var(--page-x) 50px;
+  }
+  .menu-panel.open { display: block; }
+  .menu-links { display: flex; flex-direction: column; gap: 15px; }
+  .menu-links button {
+    border: 0;
+    background: none;
+    padding: 0;
+    width: fit-content;
+    text-align: left;
+    font-size: clamp(25px, 3vw, 48px);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -.05em;
+    text-transform: uppercase;
+  }
+  .menu-links button:hover { color: var(--muted); }
+  .filter-panel {
+    position: absolute;
+    right: var(--page-x);
+    top: calc(var(--top-y) + 34px);
+    z-index: 6;
+    display: none;
+    padding: 15px 18px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    min-width: 150px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .filter-panel.open { display: flex; flex-direction: column; gap: 12px; }
+  .filter-panel button { padding: 0; border: 0; background: transparent; text-align: left; }
+  .filter-panel button.active { text-decoration: underline; text-underline-offset: 4px; }
+  .about-content, .contacts-content {
+    margin: clamp(90px, 12vw, 220px) auto 100px;
+    width: min(620px, 100%);
+    font-size: clamp(17px, 1.5vw, 25px);
+    line-height: 1.35;
+    font-weight: 500;
+  }
+  .about-content h2, .contacts-content h2 {
+    font-size: clamp(12px, .9vw, 16px);
+    line-height: 1;
+    margin: 0 0 30px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .contacts-content a { color: inherit; text-decoration: none; }
+  .contacts-content a:hover { color: var(--muted); }
+  .project-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248,248,248,.97);
+    padding: 24px;
+  }
+  .project-modal.open { display: flex; }
+  .modal-box { width: min(520px, 100%); text-align: center; }
+  .modal-frame { width: 100%; aspect-ratio: 1; background: #dedede; border: 1px solid #d4d4d4; }
+  .modal-caption { margin-top: 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .modal-close { position: absolute; top: 35px; right: var(--page-x); border: 0; background: transparent; font-size: 24px; }
+  @media (max-width: 900px) {
+    :root { --page-x: 6vw; }
+    .projects-grid { grid-template-columns: repeat(3, minmax(0,1fr)); column-gap: 6vw; }
+    .site-footer { grid-template-columns: 1fr 1.4fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .page { padding-top: 28px; }
+    .topbar { grid-template-columns: 1fr 2fr 1fr; }
+    .page-title { font-size: 11px; }
+    .projects-grid { grid-template-columns: repeat(2, minmax(0,1fr)); column-gap: 7vw; row-gap: 36px; margin-top: 45px; }
+    .project-name { opacity: .75; }
+    .site-footer { grid-template-columns: 1fr 1fr; gap: 30px 18px; padding-top: 58px; font-size: 11px; }
+    .footer-contact { grid-column: 2; grid-row: 1; }
+    .footer-right { grid-column: 1 / -1; flex-direction: row; align-items: flex-end; min-height: auto; }
+    .footer-lang { margin-top: 22px; }
+    .about-content, .contacts-content { margin-top: 100px; }
+  }
+</style>
+</head>
+<body>
+  <main>
+    <section id="intro" class="screen active" aria-label="Вход на сайт">
+      <div class="language" aria-label="Выбор языка">
+        <button class="selected" type="button">RU</button>
+        <button type="button">EN</button>
+      </div>
+      <h1 class="intro-title">АЙСОР АРХИТЕКТУРНОЕ БЮРО</h1>
+      <div class="intro-contact">
+        <div><a href="tel:+79288279448">7 928 827—94—48</a></div>
+        <div><a href="mailto:aram.251104@gmail.com">ARAM.251104@GMAIL.COM</a></div>
+      </div>
+    </section>
+
+    <section id="projects" class="screen page">
+      <header class="topbar">
+        <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false"><span></span><span></span><span></span></button>
+        <h1 class="page-title">АЙСОР АРХИТЕКТУРНОЕ БЮРО</h1>
+        <button class="filter-toggle" aria-label="Фильтр проектов" aria-expanded="false"></button>
+      </header>
+      <div class="filter-panel" aria-label="Фильтр проектов">
+        <button class="active" data-filter="all">Все проекты</button>
+        <button data-filter="housing">Жилые</button>
+        <button data-filter="public">Общественные</button>
+        <button data-filter="interior">Интерьеры</button>
+      </div>
+      <div class="projects-grid" id="projectGrid">
+        <button class="project-card" data-category="public" data-name="Проект 01"><span class="project-image"></span><span class="project-name">ПРОЕКТ 01</span></button>
+        <button class="project-card" data-category="housing" data-name="Проект 02"><span class="project-image"></span><span class="project-name">ПРОЕКТ 02</span></button>
+        <button class="project-card" data-category="interior" data-name="Проект 03"><span class="project-image"></span><span class="project-name">ПРОЕКТ 03</span></button>
+        <button class="project-card" data-category="housing" data-name="Проект 04"><span class="project-image"></span><span class="project-name">ПРОЕКТ 04</span></button>
+        <button class="project-card" data-category="public" data-name="Проект 05"><span class="project-image"></span><span class="project-name">ПРОЕКТ 05</span></button>
+        <button class="project-card" data-category="housing" data-name="Проект 06"><span class="project-image"></span><span class="project-name">ПРОЕКТ 06</span></button>
+        <button class="project-card" data-category="public" data-name="Проект 07"><span class="project-image"></span><span class="project-name">ПРОЕКТ 07</span></button>
+        <button class="project-card" data-category="interior" data-name="Проект 08"><span class="project-image"></span><span class="project-name">ПРОЕКТ 08</span></button>
+        <button class="project-card" data-category="housing" data-name="Проект 09"><span class="project-image"></span><span class="project-name">ПРОЕКТ 09</span></button>
+        <button class="project-card" data-category="public" data-name="Проект 10"><span class="project-image"></span><span class="project-name">ПРОЕКТ 10</span></button>
+        <button class="project-card" data-category="interior" data-name="Проект 11"><span class="project-image"></span><span class="project-name">ПРОЕКТ 11</span></button>
+        <button class="project-card" data-category="housing" data-name="Проект 12"><span class="project-image"></span><span class="project-name">ПРОЕКТ 12</span></button>
+      </div>
+      <footer class="site-footer">
+        <div>
+          <nav class="footer-nav">
+            <a href="#about" data-page="about">БЮРО</a>
+            <a href="#projects" data-page="projects">ПРОЕКТЫ</a>
+            <a href="#contacts" data-page="contacts">КОНТАКТЫ</a>
+          </nav>
+          <div class="footer-lang"><a href="#" class="selected">RU</a><a href="#" class="inactive">EN</a></div>
+        </div>
+        <div class="footer-contact">
+          <div>РОССИЯ, РОСТОВ-НА-ДОНУ,<br>УЛ. ПУПКИНА, ДОМ ЗАЛУПКИНА</div>
+          <br>
+          <div><a href="mailto:aram.251104@gmail.com">ARAM.251104@GMAIL.COM</a></div>
+          <div><a href="tel:+79288279448">7 (928) 827-94-48</a></div>
+        </div>
+        <div class="footer-right">
+          <button class="to-top" type="button">НАВЕРХ</button>
+          <div class="credit">Архитектурное бюро — <strong>АЙСОР</strong></div>
+        </div>
+      </footer>
+    </section>
+
+    <section id="about" class="screen page">
+      <header class="topbar">
+        <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false"><span></span><span></span><span></span></button>
+        <h1 class="page-title">АЙСОР АРХИТЕКТУРНОЕ БЮРО</h1>
+        <span></span>
+      </header>
+      <article class="about-content">
+        <h2>БЮРО</h2>
+        <p>АЙСОР — архитектурное бюро. Мы создаём пространства, в которых архитектура, функция и контекст существуют в единой системе.</p>
+        <p>В основе работы — внимательное отношение к месту, материалу и человеку.</p>
+      </article>
+      <footer class="site-footer">
+        <div><nav class="footer-nav"><a href="#about" data-page="about">БЮРО</a><a href="#projects" data-page="projects">ПРОЕКТЫ</a><a href="#contacts" data-page="contacts">КОНТАКТЫ</a></nav><div class="footer-lang"><a href="#">RU</a><a href="#" class="inactive">EN</a></div></div>
+        <div class="footer-contact"><div>РОССИЯ, РОСТОВ-НА-ДОНУ,<br>УЛ. ПУПКИНА, ДОМ ЗАЛУПКИНА</div><br><div><a href="mailto:aram.251104@gmail.com">ARAM.251104@GMAIL.COM</a></div><div><a href="tel:+79288279448">7 (928) 827-94-48</a></div></div>
+        <div class="footer-right"><button class="to-top" type="button">НАВЕРХ</button><div class="credit">Архитектурное бюро — <strong>АЙСОР</strong></div></div>
+      </footer>
+    </section>
+
+    <section id="contacts" class="screen page">
+      <header class="topbar">
+        <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false"><span></span><span></span><span></span></button>
+        <h1 class="page-title">АЙСОР АРХИТЕКТУРНОЕ БЮРО</h1>
+        <span></span>
+      </header>
+      <article class="contacts-content">
+        <h2>КОНТАКТЫ</h2>
+        <p><a href="tel:+79288279448">+7 928 827-94-48</a><br><a href="mailto:aram.251104@gmail.com">aram.251104@gmail.com</a></p>
+        <p>Россия, Ростов-на-Дону,<br>ул. Пупкина, дом Залупкина</p>
+      </article>
+      <footer class="site-footer">
+        <div><nav class="footer-nav"><a href="#about" data-page="about">БЮРО</a><a href="#projects" data-page="projects">ПРОЕКТЫ</a><a href="#contacts" data-page="contacts">КОНТАКТЫ</a></nav><div class="footer-lang"><a href="#">RU</a><a href="#" class="inactive">EN</a></div></div>
+        <div class="footer-contact"><div>РОССИЯ, РОСТОВ-НА-ДОНУ,<br>УЛ. ПУПКИНА, ДОМ ЗАЛУПКИНА</div><br><div><a href="mailto:aram.251104@gmail.com">ARAM.251104@GMAIL.COM</a></div><div><a href="tel:+79288279448">7 (928) 827-94-48</a></div></div>
+        <div class="footer-right"><button class="to-top" type="button">НАВЕРХ</button><div class="credit">Архитектурное бюро — <strong>АЙСОР</strong></div></div>
+      </footer>
+    </section>
+  </main>
+
+  <div class="menu-panel" aria-hidden="true">
+    <nav class="menu-links">
+      <button data-page="projects">ПРОЕКТЫ</button>
+      <button data-page="contacts">КОНТАКТЫ</button>
+      <button data-page="about">БЮРО</button>
+    </nav>
+  </div>
+  <div class="project-modal" aria-hidden="true">
+    <button class="modal-close" aria-label="Закрыть">×</button>
+    <div class="modal-box"><div class="modal-frame"></div><div class="modal-caption"></div></div>
+  </div>
+
+<script>
+(() => {
+  const screens = [...document.querySelectorAll('.screen')];
+  const menu = document.querySelector('.menu-panel');
+  const modal = document.querySelector('.project-modal');
+  const modalCaption = document.querySelector('.modal-caption');
+
+  function showPage(id) {
+    screens.forEach(s => s.classList.toggle('active', s.id === id));
+    closeMenu();
+    document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('open'));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+  }
+  function closeMenu() {
+    menu.classList.remove('open');
+    menu.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.menu-toggle').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  }
+  document.querySelectorAll('.menu-toggle').forEach(btn => btn.addEventListener('click', () => {
+    const open = !menu.classList.contains('open');
+    menu.classList.toggle('open', open);
+    menu.setAttribute('aria-hidden', String(!open));
+    document.querySelectorAll('.menu-toggle').forEach(b => b.setAttribute('aria-expanded', String(open)));
+  }));
+  document.querySelectorAll('[data-page]').forEach(link => link.addEventListener('click', e => {
+    e.preventDefault(); showPage(link.dataset.page);
+  }));
+  document.querySelector('#intro').addEventListener('click', e => {
+    if (e.target.closest('.language')) return;
+    showPage('projects');
+  });
+  document.querySelectorAll('.language button').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    document.querySelectorAll('.language button').forEach(b => b.classList.toggle('selected', b === btn));
+  }));
+  document.querySelectorAll('.filter-toggle').forEach(btn => btn.addEventListener('click', () => {
+    const panel = document.querySelector('.filter-panel');
+    const open = !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+  }));
+  document.querySelectorAll('.filter-panel button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-panel button').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.project-card').forEach(card => {
+      card.style.display = btn.dataset.filter === 'all' || card.dataset.category === btn.dataset.filter ? '' : 'none';
+    });
+  }));
+  document.querySelectorAll('.project-card').forEach(card => card.addEventListener('click', () => {
+    modalCaption.textContent = card.dataset.name;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }));
+  function closeModal() { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+  document.querySelector('.modal-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeMenu(); closeModal(); }
+  });
+  document.querySelectorAll('.to-top').forEach(btn => btn.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'})));
+  const initial = location.hash.slice(1);
+  if (['projects','about','contacts'].includes(initial)) showPage(initial);
+})();
+</script>
+</body>
+</html>
